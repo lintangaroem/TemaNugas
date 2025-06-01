@@ -1,5 +1,16 @@
+// lib/ui/screens/homepage.dart
 import 'package:flutter/material.dart';
-import 'package:teman_nugas/constants/constant.dart'; // Pastikan file constant.dart berada di lokasi yang benar
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart'; // Untuk format tanggal
+
+import 'package:teman_nugas/constants/constant.dart';
+import '../../../models/group.dart';
+import '../../../models/user/authenticated_user.dart';
+import '../../../services/API/api_services.dart'; // Kita akan pakai service
+import '../../../providers/auth_provider.dart';
+import '../widgets/group_card.dart'; // Widget kartu grup baru
+import 'groups_overview_page.dart'; // Halaman grup saya
+// import 'profile_page.dart'; // Halaman profil
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,55 +21,119 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0; // Untuk BottomNavigationBar
+  final ApiService _apiService = ApiService(); // Instance API service
+  Future<List<Group>>? _discoverableGroupsFuture;
+  AuthenticatedUser? _currentUser;
 
-  void _onItemTapped(int index) {
+  @override
+  void initState() {
+    super.initState();
+    // Ambil data user saat ini dari AuthProvider
+    _currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+    _loadDiscoverableGroups();
+  }
+
+  void _loadDiscoverableGroups() {
     setState(() {
-      _selectedIndex = index;
-      // Tambahkan navigasi ke halaman lain di sini jika diperlukan
-      // if (index == 1) { Navigator.pushNamed(context, '/group'); }
-      // if (index == 2) { Navigator.pushNamed(context, '/profile'); }
+      _discoverableGroupsFuture = _apiService.getDiscoverableGroups();
     });
   }
 
-  // --- Dialog Tambah Proyek ---
-  void _showAddProjectDialog(BuildContext context) {
+  void _onItemTapped(int index) {
+    if (index == _selectedIndex) return; // Hindari rebuild jika tab sama
+
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    // Navigasi berdasarkan index
+    // HomePage adalah index 0, jadi tidak perlu navigasi jika kembali ke sini
+    if (index == 1) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const GroupsOverviewPage()),
+      );
+    } else if (index == 2) {
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Halaman Profil belum dibuat.')),
+      );
+    }
+  }
+
+  // --- Dialog Buat Grup Baru ---
+  void _showCreateGroupDialog(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    String groupName = '';
+    String groupDescription = '';
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text("Project Name", style: AppTextStyles.heading),
-          content: SingleChildScrollView( // Menggunakan SingleChildScrollView jika kontennya panjang
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _buildTextField("Project Name"), // Akan menggunakan nama proyek sebagai judul dialog
-                const SizedBox(height: 16),
-                _buildTextField("Deadline"),
-                const SizedBox(height: 16),
-                _buildTextField("Members"),
-                const SizedBox(height: 16),
-                _buildTextField("Description", maxLines: 3),
-              ],
+          title: const Text("Buat Grup Baru", style: AppTextStyles.heading),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  TextFormField(
+                    decoration: InputDecoration(
+                      labelText: "Nama Grup",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama grup tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) => groupName = value!,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    decoration: InputDecoration(
+                      labelText: "Deskripsi Grup (Opsional)",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    maxLines: 3,
+                    onSaved: (value) => groupDescription = value ?? '',
+                  ),
+                ],
+              ),
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text("CANCEL", style: TextStyle(color: AppColors.redAlert)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              child: const Text("BATAL", style: TextStyle(color: AppColors.redAlert)),
+              onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryBlue,
-                foregroundColor: AppColors.background,
-              ),
-              child: const Text("ADD"),
-              onPressed: () {
-                // Logika untuk menambah proyek
-                Navigator.of(context).pop();
+              child: const Text("BUAT GRUP"),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                  try {
+                    final newGroup = await _apiService.createGroup(groupName, groupDescription);
+                    Navigator.of(context).pop(); // Tutup dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Grup "${newGroup.name}" berhasil dibuat!'), backgroundColor: Colors.green),
+                    );
+                    // Refresh daftar grup atau navigasi ke halaman grup baru
+                    // Untuk sekarang, kita refresh daftar discoverable groups (meski idealnya ada state management yang lebih baik)
+                    _loadDiscoverableGroups();
+                    // Mungkin juga mau refresh data user di AuthProvider jika createGroup otomatis menambahkan user
+                    Provider.of<AuthProvider>(context, listen: false).fetchUserDetails();
+                  } catch (e) {
+                     Navigator.of(context).pop(); // Tutup dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal membuat grup: ${e.toString().replaceFirst("Exception: ", "")}'), backgroundColor: AppColors.redAlert),
+                    );
+                  }
+                }
               },
             ),
           ],
@@ -67,100 +142,57 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTextField(String labelText, {int maxLines = 1}) {
-    return TextField(
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: AppTextStyles.regular.copyWith(color: Colors.grey[600]),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.darkBlue),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[400]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
-        ),
-      ),
-    );
-  }
-
-  // --- Dialog Konfirmasi Join ---
-  void _showJoinConfirmationDialog(BuildContext context, String projectName) {
+  // --- Dialog Konfirmasi Request Join ---
+  void _showJoinConfirmationDialog(BuildContext context, Group group) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          contentPadding: const EdgeInsets.all(20),
+          title: Text(group.name, style: AppTextStyles.heading.copyWith(fontSize: 18), textAlign: TextAlign.center),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                projectName,
-                style: AppTextStyles.heading.copyWith(fontSize: 18),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Anggota : 1/5", // Contoh data
-                style: AppTextStyles.regular.copyWith(color: Colors.grey[700]),
-              ),
-              Text(
-                "Deadline : 17 Agustus 2026", // Contoh data
-                style: AppTextStyles.regular.copyWith(color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Membuat aplikasi task management tugas berbasis haha hihi huhuhu hehe", // Contoh deskripsi panjang
+                group.description ?? "Tidak ada deskripsi.",
                 style: AppTextStyles.regular.copyWith(fontSize: 14),
                 textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 20),
               Text(
-                "Apakah kamu yakin untuk join?",
-                style: AppTextStyles.content.copyWith(fontSize: 16),
+                "Anda akan mengirim permintaan untuk bergabung dengan grup ini. Lanjutkan?",
+                style: AppTextStyles.content.copyWith(fontSize: 15),
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.redAlert,
-                        side: const BorderSide(color: AppColors.redAlert),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text("CANCEL"),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
-                        foregroundColor: AppColors.background,
-                      ),
-                      child: const Text("JOIN"),
-                      onPressed: () {
-                        // Logika untuk bergabung dengan proyek
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
+          actions: <Widget>[
+            TextButton(
+              child: const Text("BATAL", style: TextStyle(color: AppColors.redAlert)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: const Text("KIRIM PERMINTAAN"),
+              onPressed: () async {
+                Navigator.of(context).pop(); // Tutup dialog konfirmasi dulu
+                try {
+                  await _apiService.requestToJoinGroup(group.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Permintaan bergabung ke "${group.name}" terkirim!'), backgroundColor: Colors.green),
+                  );
+                  // Refresh data user untuk update pending requests
+                  Provider.of<AuthProvider>(context, listen: false).fetchUserDetails();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal: ${e.toString().replaceFirst("Exception: ", "")}'), backgroundColor: AppColors.redAlert),
+                  );
+                }
+              },
+            ),
+          ],
         );
       },
     );
@@ -169,6 +201,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Dapatkan user dari AuthProvider untuk personalisasi
+    // final authProvider = Provider.of<AuthProvider>(context);
+    // final user = authProvider.user; // Bisa digunakan untuk sapaan, dll.
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -178,38 +214,44 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               const SizedBox(height: 20),
-              // --- Bagian Atas (Profil Pengguna) ---
               Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 28,
-                    // Ganti dengan gambar profil pengguna jika ada
-                    backgroundImage: NetworkImage('https://via.placeholder.com/150/0000FF/808080?Text=User'),
-                    backgroundColor: Colors.grey,
+                    backgroundImage: _currentUser?.id != null // Ganti dengan logika avatar yang benar
+                        ? NetworkImage('https://ui-avatars.com/api/?name=${_currentUser!.name.replaceAll(' ', '+')}&background=random&size=128')
+                        : null,
+                    backgroundColor: Colors.grey[300],
+                    child: _currentUser?.id == null ? const Icon(Icons.person, size: 28, color: Colors.grey) : null,
                   ),
                   const SizedBox(width: 15),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Halo, Salma!", style: AppTextStyles.heading.copyWith(fontSize: 18)),
+                      Text(
+                        "Halo, ${_currentUser?.name ?? 'Tamu'}!",
+                        style: AppTextStyles.heading.copyWith(fontSize: 18),
+                      ),
                       Text(
                         "Siap nugas bareng hari ini?",
                         style: AppTextStyles.regular.copyWith(color: Colors.grey[600]),
                       ),
-                      Text(
-                        "3 projects remain", // Contoh data
-                        style: AppTextStyles.regular.copyWith(fontSize: 10, color: AppColors.primaryBlue),
-                      ),
                     ],
                   ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: AppColors.primaryBlue),
+                    onPressed: () async {
+                      await Provider.of<AuthProvider>(context, listen: false).logout();
+                      // Navigasi ke login akan dihandle oleh Consumer di main.dart
+                    },
+                  )
                 ],
               ),
               const SizedBox(height: 25),
-
-              // --- Search Project ---
               TextField(
                 decoration: InputDecoration(
-                  hintText: "Search Project",
+                  hintText: "Cari Grup...",
                   hintStyle: AppTextStyles.regular.copyWith(color: Colors.grey),
                   prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
                   filled: true,
@@ -219,36 +261,42 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primaryBlue),
-                  ),
                 ),
+                onChanged: (value) {
+                  // Implementasi search (mungkin perlu debounce dan panggil API baru)
+                },
               ),
               const SizedBox(height: 25),
-
-              // --- Daftar Proyek ---
+              Text("Temukan Grup", style: AppTextStyles.heading.copyWith(fontSize: 18)),
+              const SizedBox(height: 10),
               Expanded(
-                child: ListView.builder(
-                  itemCount: 3, // Jumlah proyek (contoh)
-                  itemBuilder: (context, index) {
-                    // Anda bisa mengganti ini dengan data proyek yang sebenarnya
-                    String projectName = "Sistem Informasi Geografis";
-                    if (index == 1) projectName = "Aplikasi Mobile E-commerce";
-                    if (index == 2) projectName = "Website Portfolio Pribadi";
-
-                    return ProjectCard(
-                      projectName: projectName,
-                      memberCount: "1/5",
-                      deadline: "17 Agustus 2026",
-                      description: "Membuat aplikasi task management...",
-                      onJoin: () {
-                        _showJoinConfirmationDialog(context, projectName);
+                child: FutureBuilder<List<Group>>(
+                  future: _discoverableGroupsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error.toString().replaceFirst("Exception: ", "")}"));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text("Belum ada grup tersedia."));
+                    }
+                    final groups = snapshot.data!;
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                         _loadDiscoverableGroups();
                       },
+                      child: ListView.builder(
+                        itemCount: groups.length,
+                        itemBuilder: (context, index) {
+                          final group = groups[index];
+                          return GroupCard(
+                            group: group,
+                            onJoinPressed: () {
+                               _showJoinConfirmationDialog(context, group);
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
@@ -257,118 +305,30 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          _showAddProjectDialog(context);
+          _showCreateGroupDialog(context);
         },
         backgroundColor: AppColors.primaryBlue,
-        foregroundColor: AppColors.background,
-        elevation: 2.0,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, size: 28),
+        icon: const Icon(Icons.add, color: AppColors.background),
+        label: const Text("BUAT GRUP", style: TextStyle(color: AppColors.background, fontWeight: FontWeight.bold)),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // Sesuai gambar
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Group',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.group_work_outlined), label: 'Grup Saya'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: AppColors.primaryBlue,
         unselectedItemColor: Colors.grey[500],
         onTap: _onItemTapped,
         backgroundColor: AppColors.background,
-        elevation: 8.0, // Memberi sedikit bayangan
-        type: BottomNavigationBarType.fixed, // Agar semua label terlihat
-        selectedLabelStyle: AppTextStyles.regular.copyWith(fontSize: 10, fontWeight: FontWeight.w500),
-        unselectedLabelStyle: AppTextStyles.regular.copyWith(fontSize: 10),
-      ),
-    );
-  }
-}
-
-// --- Widget untuk Kartu Proyek ---
-class ProjectCard extends StatelessWidget {
-  final String projectName;
-  final String memberCount;
-  final String deadline;
-  final String description;
-  final VoidCallback onJoin;
-
-  const ProjectCard({
-    super.key,
-    required this.projectName,
-    required this.memberCount,
-    required this.deadline,
-    required this.description,
-    required this.onJoin,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2.0,
-      margin: const EdgeInsets.only(bottom: 16.0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        side: BorderSide(color: Colors.grey[300]!, width: 0.5),
-      ),
-      color: AppColors.background,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(projectName, style: AppTextStyles.content.copyWith(fontSize: 16)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.group_outlined, size: 16, color: Colors.grey[700]),
-                const SizedBox(width: 4),
-                Text("Anggota : $memberCount", style: AppTextStyles.regular.copyWith(color: Colors.grey[700])),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[700]),
-                const SizedBox(width: 4),
-                Text("Deadline : $deadline", style: AppTextStyles.regular.copyWith(color: Colors.grey[700])),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: AppTextStyles.regular.copyWith(fontSize: 12, color: Colors.grey[800]),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: onJoin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                  foregroundColor: AppColors.background,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  textStyle: AppTextStyles.regular.copyWith(fontWeight: FontWeight.w500, fontSize: 13)
-                ),
-                child: const Text("JOIN"),
-              ),
-            ),
-          ],
-        ),
+        elevation: 8.0,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: AppTextStyles.regular.copyWith(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: AppTextStyles.regular.copyWith(fontSize: 11),
       ),
     );
   }
