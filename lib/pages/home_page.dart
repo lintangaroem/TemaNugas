@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/navbar.dart'; // pastikan path-nya sesuai
-import '../pages/group_page.dart';  // sesuaikan path
+import '../pages/group_page.dart';
+import '../pages/profile.dart'; // sesuaikan path
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,7 +12,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  // Controller untuk popup form tambah project
   final TextEditingController _projectNameController = TextEditingController();
   final TextEditingController _deadlineController = TextEditingController();
   final TextEditingController _membersController = TextEditingController();
@@ -19,8 +19,8 @@ class _HomePageState extends State<HomePage> {
 
   static final List<Widget> _pages = [
     const HomeContent(),
-    const GroupPage(),  // ganti placeholder ini kalau sudah ada halaman group asli
-    // const ProfilePage(), // jika ada profile page
+    const GroupPage(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -29,13 +29,22 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Fungsi untuk menampilkan popup form tambah project
   void _showAddProjectDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Center(child: const Text('Add New Project')), // Judul di tengah
+          backgroundColor: Colors.white,
+          title: Center(
+            child: const Text(
+              'Add New Project',
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
+            ),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -50,7 +59,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          actionsAlignment: MainAxisAlignment.center, // <-- ini untuk center tombol
+          actionsAlignment: MainAxisAlignment.center,
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -67,7 +76,14 @@ class _HomePageState extends State<HomePage> {
                 _membersController.clear();
                 _descriptionController.clear();
               },
-              child: const Text('ADD'),
+              child: const Text(
+                'ADD',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'PlusJakartaSans',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -76,10 +92,15 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('CANCEL'),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'CANCEL',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'PlusJakartaSans',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -87,17 +108,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Fungsi popup konfirmasi join project
-  void _showJoinConfirmation(BuildContext context, {
-    required String title,
-    required String anggota,
-    required String deadline,
-    required String description,
-  }) {
+  void _showJoinConfirmation(BuildContext context,
+      {required String title,
+        required String anggota,
+        required String deadline,
+        required String description}) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -109,6 +129,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 title,
                 style: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -117,6 +138,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 'Anggota : $anggota',
                 style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[700],
                 ),
@@ -125,6 +147,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 'Deadline : $deadline',
                 style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[700],
                 ),
@@ -133,6 +156,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 description,
                 style: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
                   fontSize: 14,
                   color: Colors.black87,
                 ),
@@ -144,6 +168,7 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   'Apakah kamu yakin untuk join?',
                   style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
@@ -163,11 +188,13 @@ class _HomePageState extends State<HomePage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     ),
                     child: const Text(
                       'JOIN',
                       style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -176,19 +203,19 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(width: 16),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
+                    onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     ),
                     child: const Text(
                       'CANCEL',
                       style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -218,6 +245,12 @@ class _HomePageState extends State<HomePage> {
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        hintStyle: const TextStyle(
+          fontFamily: 'PlusJakartaSans',
+        ),
+      ),
+      style: const TextStyle(
+        fontFamily: 'PlusJakartaSans',
       ),
     );
   }
@@ -288,6 +321,7 @@ class HomeContent extends StatelessWidget {
                           Text(
                             'Halo, Salma!',
                             style: TextStyle(
+                              fontFamily: 'PlusJakartaSans',
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -296,6 +330,7 @@ class HomeContent extends StatelessWidget {
                           Text(
                             'Siap nugas bareng hari ini?',
                             style: TextStyle(
+                              fontFamily: 'PlusJakartaSans',
                               fontSize: 14,
                               color: Colors.black54,
                             ),
@@ -312,6 +347,7 @@ class HomeContent extends StatelessWidget {
                               Text(
                                 '3 projects remain',
                                 style: TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
                                   fontSize: 14,
                                   color: Colors.redAccent,
                                 ),
@@ -329,6 +365,7 @@ class HomeContent extends StatelessWidget {
             const Text(
               'Search Project',
               style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
@@ -369,6 +406,7 @@ class HomeContent extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -377,6 +415,7 @@ class HomeContent extends StatelessWidget {
             Text(
               'Anggota : $anggota',
               style: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
                 fontSize: 12,
                 color: Colors.black54,
               ),
@@ -385,6 +424,7 @@ class HomeContent extends StatelessWidget {
             Text(
               'Deadline : $deadline',
               style: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
                 fontSize: 12,
                 color: Colors.black54,
               ),
@@ -393,6 +433,7 @@ class HomeContent extends StatelessWidget {
             Text(
               description,
               style: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
                 fontSize: 14,
                 color: Colors.black87,
               ),
@@ -404,7 +445,6 @@ class HomeContent extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () {
-                  // Panggil popup join confirmation dari parent State
                   final homeState = context.findAncestorStateOfType<_HomePageState>();
                   homeState?._showJoinConfirmation(
                     context,
@@ -424,6 +464,7 @@ class HomeContent extends StatelessWidget {
                 child: const Text(
                   'JOIN',
                   style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,

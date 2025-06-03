@@ -80,6 +80,7 @@ class _LoginPageState extends State<LoginPage> {
               const Text(
                 'Sign In',
                 style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.w700,
                   fontSize: 22,
                   color: Colors.black87,
@@ -135,6 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text(
                     'Forget password?',
                     style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
                       color: Color(0xFF58A7BB),
                       fontSize: 14,
                     ),
@@ -147,6 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: const Text(
                   'New User? Create Account',
                   style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
                     fontSize: 14,
                     color: Colors.grey,
                     decoration: TextDecoration.underline,
@@ -168,6 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text(
                     'LOG IN',
                     style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                       letterSpacing: 1.2,

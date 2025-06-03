@@ -83,6 +83,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const Text(
                 'Register',
                 style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.w700,
                   fontSize: 22,
                   color: Colors.black87,
@@ -189,6 +190,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: const Text(
                     'REGISTER',
                     style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                       letterSpacing: 1.2,

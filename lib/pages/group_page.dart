@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // import widget navbar
+// import widget navbar
 
 class GroupPage extends StatelessWidget {
   const GroupPage({super.key});
@@ -9,20 +9,14 @@ class GroupPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.blue[400],
-        elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
         title: const Text(
           'Group Page',
           style: TextStyle(
-            color: Colors.white,
+            fontFamily: 'PlusJakartaSans',
+            color: Colors.black,
             fontWeight: FontWeight.w500,
-          ),
-        ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
           ),
         ),
       ),
@@ -47,6 +41,7 @@ class GroupPage extends StatelessWidget {
                     const Text(
                       'Sistem Informasi Geografis',
                       style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                         color: Colors.black87,
@@ -56,6 +51,7 @@ class GroupPage extends StatelessWidget {
                     const Text(
                       'Membuat aplikasi task management untuk mengelola dan memantau tugas dengan memanfaatkan data lokasi geografis.',
                       style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
                         fontSize: 13,
                         color: Colors.black54,
                         height: 1.4,
@@ -77,6 +73,7 @@ class GroupPage extends StatelessWidget {
                         Text(
                           'Updated: 1 hour ago',
                           style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
                             fontSize: 11,
                             color: Colors.grey[600],
                           ),
