@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+ // import widget navbar
 
 class GroupPage extends StatelessWidget {
   const GroupPage({super.key});
@@ -10,18 +11,14 @@ class GroupPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.blue[400],
         elevation: 0,
-        centerTitle: true, // ini untuk center title
-        automaticallyImplyLeading: false, // supaya gak otomatis kasih leading default
+        centerTitle: true,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Group Page',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w500,
           ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
         ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
@@ -31,7 +28,7 @@ class GroupPage extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: 4, // Sesuai dengan screenshot yang menunjukkan 4 cards
+        itemCount: 4,
         itemBuilder: (context, index) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -67,7 +64,7 @@ class GroupPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     LinearProgressIndicator(
                       borderRadius: BorderRadius.circular(10),
-                      value: 0.6, // Progress 60%
+                      value: 0.6,
                       backgroundColor: Colors.grey[300],
                       valueColor: AlwaysStoppedAnimation<Color>(
                         Color(0xFF003782),
@@ -85,7 +82,6 @@ class GroupPage extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        // Avatar members
                         Stack(
                           children: [
                             CircleAvatar(

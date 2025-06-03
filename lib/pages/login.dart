@@ -1,3 +1,4 @@
+import 'package:TemaNugas/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'register.dart';
 
@@ -62,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
     // Navigasi ke GroupPage dan hapus halaman login dari stack
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const GroupPage()),
+      MaterialPageRoute(builder: (context) => const HomePage()),
     );
   }
 
