@@ -8,6 +8,8 @@ class Project {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  var group;
+
   Project({
     required this.id,
     required this.groupId,

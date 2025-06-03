@@ -29,23 +29,23 @@ class Group {
   });
 
   factory Group.fromJson(Map<String, dynamic> json) {
-    return Group(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      creator: json['creator'] != null ? User.fromJson(json['creator']) : null,
-      createdBy: json['created_by'],
-      approvedMembersCount: json['approved_members_count'],
-      // Jika ada pivot status dari relasi user ke group
-      userStatusInGroup: json['pivot']?['status'],
-      approvedMembers: (json['approved_members'] as List<dynamic>?)
-          ?.map((m) => User.fromJson(m as Map<String, dynamic>))
-          .toList(),
-      pendingRequests: (json['pending_requests'] as List<dynamic>?)
-          ?.map((m) => User.fromJson(m as Map<String, dynamic>))
-          .toList(),
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-    );
-  }
+  return Group(
+    id: json['id'],
+    // Pastikan 'name' tidak null, jika bisa null dari API, berikan default atau throw error yang lebih jelas
+    name: json['name'] ?? 'Nama Grup Tidak Ada', // Atau handle error jika nama wajib
+    description: json['description'], // Ini sudah nullable, jadi aman
+    creator: json['creator'] != null ? User.fromJson(json['creator']) : null,
+    createdBy: json['created_by'],
+    approvedMembersCount: json['approved_members_count'],
+    userStatusInGroup: json['pivot']?['status'],
+    approvedMembers: (json['approved_members'] as List<dynamic>?)
+        ?.map((m) => User.fromJson(m as Map<String, dynamic>))
+        .toList(),
+    pendingRequests: (json['pending_requests'] as List<dynamic>?)
+        ?.map((m) => User.fromJson(m as Map<String, dynamic>))
+        .toList(),
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+    updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+  );
+}
 }
