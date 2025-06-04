@@ -11,16 +11,11 @@ import '../../models/todo.dart';
 import '../../models/note.dart';
 
 class ApiService {
-  // --- KONFIGURASI BASE URL ---
-  // Ganti dengan IP address lokal komputer Anda jika testing di device fisik
-  // atau 10.0.2.2 jika testing di emulator Android & Laravel jalan di localhost.
-  // Pastikan server Laravel Anda berjalan dengan --host=0.0.0.0
-  static const String _baseUrl = 'http://192.168.0.23:8000/api'; // CONTOH, SESUAIKAN!
+  static const String _baseUrl = 'http://192.168.1.97:8000/api';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   static const String _authTokenKey = 'auth_token';
 
-  // --- Helper untuk Token ---
   Future<String?> getToken() async {
     return await _storage.read(key: _authTokenKey);
   }
@@ -33,7 +28,6 @@ class ApiService {
     await _storage.delete(key: _authTokenKey);
   }
 
-  // --- Helper untuk Headers ---
   Future<Map<String, String>> _getHeaders({bool requiresAuth = true, bool isJsonContent = true}) async {
     Map<String, String> headers = {};
     if (isJsonContent) {
@@ -49,7 +43,6 @@ class ApiService {
     return headers;
   }
 
-  // --- Helper untuk Error Handling ---
   Exception _handleErrorResponse(http.Response response, String defaultMessage) {
     try {
       final responseData = jsonDecode(response.body);
@@ -59,8 +52,6 @@ class ApiService {
     }
   }
 
-
-  // === OTENTIKASI ===
   Future<Map<String, dynamic>> register(String name, String email, String password, String passwordConfirmation) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/register'),
@@ -120,7 +111,7 @@ class ApiService {
     } catch (e) {
       print('Error saat memanggil API logout: $e');
     } finally {
-      await deleteToken(); // Selalu hapus token dari storage
+      await deleteToken();
     }
   }
 
@@ -132,7 +123,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return AuthenticatedUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } else if (response.statusCode == 401) {
-      await deleteToken(); // Token tidak valid, hapus
+      await deleteToken();
       throw Exception('Sesi tidak valid. Silakan login kembali.');
     }
     throw _handleErrorResponse(response, 'Gagal mengambil data pengguna');
@@ -142,7 +133,7 @@ class ApiService {
   Future<List<Project>> getDiscoverableProjects() async {
     final response = await http.get(
       Uri.parse('$_baseUrl/projects'),
-      headers: await _getHeaders(), // Asumsi perlu otentikasi
+      headers: await _getHeaders(),
     );
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -235,7 +226,6 @@ class ApiService {
     throw _handleErrorResponse(response, 'Gagal keluar dari proyek');
   }
 
-  // === TODOS ===
   Future<List<Todo>> getTodosForProject(int projectId) async {
     final response = await http.get(
       Uri.parse('$_baseUrl/projects/$projectId/todos'),

@@ -1,19 +1,13 @@
+import 'package:TemaNugas/screens/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:teman_nugas/constants/theme.dart'; // Sesuaikan path jika berbeda
-import 'package:teman_nugas/providers/auth_provider.dart'; // Sesuaikan path jika berbeda
-import 'package:teman_nugas/screens/login/pages/login.dart'; // Sesuaikan path jika berbeda
-import 'package:teman_nugas/screens/login/pages/register.dart';
-
-// Import untuk initializeDateFormatting
-import 'package:intl/date_symbol_data_local.dart'; // Perhatikan path ini mungkin berbeda tergantung versi intl
-// Atau coba: import 'package:intl/intl_browser.dart'; jika untuk web, atau cukup 'package:intl/date_symbol_data_local.dart';
-
-// Untuk format tanggal Indonesia di DatePicker dan lainnya
+import 'package:TemaNugas/constants/theme.dart'; // Sesuaikan path jika berbeda
+import 'package:TemaNugas/providers/auth_provider.dart'; // Sesuaikan path jika berbeda
+import 'package:TemaNugas/screens/login/pages/login.dart'; 
+import 'package:TemaNugas/screens/login/pages/register.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:teman_nugas/screens/pages/home_page.dart';
 
-// Fungsi main sekarang menjadi async untuk await initializeDateFormatting
 Future<void> main() async { // Tambahkan async
   // Pastikan Flutter binding diinisialisasi jika ada operasi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();

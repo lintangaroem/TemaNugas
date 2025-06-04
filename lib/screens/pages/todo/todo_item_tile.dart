@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:teman_nugas/models/todo.dart'; // Sesuaikan path jika perlu
-import 'package:teman_nugas/constants/constant.dart'; // Sesuaikan path jika perlu
+import 'package:TemaNugas/models/todo.dart'; // Sesuaikan path jika perlu
+import 'package:TemaNugas/constants/constant.dart'; // Sesuaikan path jika perlu
 
 class TodoItemTile extends StatelessWidget {
   final Todo todo;

@@ -27,14 +27,13 @@ class ProjectCard extends StatelessWidget {
     String buttonText = "REQUEST JOIN";
     bool canRequestJoin = true;
 
-    // Contoh logika untuk mengubah teks tombol berdasarkan status (jika ada)
-    // if (userProjectStatus == 'pending') {
-    //   buttonText = "REQUEST SENT";
-    //   canRequestJoin = false;
-    // } else if (userProjectStatus == 'approved' || userProjectStatus == 'creator') {
-    //   buttonText = "VIEW PROJECT";
-    //   canRequestJoin = false; // Atau arahkan ke detail jika di-tap
-    // }
+    if (userProjectStatus == 'pending') {
+      buttonText = "REQUEST SENT";
+      canRequestJoin = false;
+    } else if (userProjectStatus == 'approved' || userProjectStatus == 'creator') {
+      buttonText = "VIEW PROJECT";
+      canRequestJoin = false; // Atau arahkan ke detail jika di-tap
+    }
 
     return Card(
       // Menggunakan styling dari AppTheme.cardTheme secara default
@@ -99,7 +98,7 @@ class ProjectCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 14),
-              if (canRequestJoin) // Hanya tampilkan tombol jika bisa request join
+              if (canRequestJoin)
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
