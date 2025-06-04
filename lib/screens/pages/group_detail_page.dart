@@ -6,8 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/API/api_services.dart'; // Menggunakan nama file dari kode Anda
 import '../../../models/project.dart';
-import 'package:teman_nugas/models/user/authenticated_user.dart';
-import 'package:teman_nugas/models/user/user.dart';
+import 'package:TemaNugas/models/user/authenticated_user.dart';
+import 'package:TemaNugas/models/user/user.dart';
 import '../../../models/todo.dart';
 // import '../../../models/note.dart'; // Untuk fitur Notes nanti
 import '../../../constants/constant.dart';
