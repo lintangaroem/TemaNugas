@@ -1,56 +1,67 @@
-// lib/services/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../models/user/authenticated_user.dart';
-import 'package:intl/intl.dart';
-import '../../models/group.dart';
-import '../../models/project.dart';
+import 'package:intl/intl.dart'; // Untuk format tanggal
+
+// Sesuaikan path import model Anda
 import '../../models/user/authenticated_user.dart';
 import '../../models/user/user.dart';
+import '../../models/project.dart';
+import '../../models/todo.dart';
+import '../../models/note.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://192.168.78.243:8000/api'; // Sesuaikan!
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  // --- KONFIGURASI BASE URL ---
+  // Ganti dengan IP address lokal komputer Anda jika testing di device fisik
+  // atau 10.0.2.2 jika testing di emulator Android & Laravel jalan di localhost.
+  // Pastikan server Laravel Anda berjalan dengan --host=0.0.0.0
+  static const String _baseUrl = 'http://192.168.0.23:8000/api'; // CONTOH, SESUAIKAN!
 
-  // Jadikan publik atau buat metode wrapper jika ingin menjaga _storage tetap private
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static const String _authTokenKey = 'auth_token';
+
+  // --- Helper untuk Token ---
   Future<String?> getToken() async {
-    return await _storage.read(key: 'auth_token');
+    return await _storage.read(key: _authTokenKey);
   }
 
   Future<void> saveToken(String token) async {
-    await _storage.write(key: 'auth_token', value: token);
+    await _storage.write(key: _authTokenKey, value: token);
   }
 
   Future<void> deleteToken() async {
-    await _storage.delete(key: 'auth_token');
+    await _storage.delete(key: _authTokenKey);
   }
 
-  Future<Map<String, String>> _getHeaders({
-    bool requiresAuth = true,
-    bool isJsonContent = true,
-  }) async {
+  // --- Helper untuk Headers ---
+  Future<Map<String, String>> _getHeaders({bool requiresAuth = true, bool isJsonContent = true}) async {
     Map<String, String> headers = {};
     if (isJsonContent) {
       headers['Content-Type'] = 'application/json; charset=UTF-8';
       headers['Accept'] = 'application/json';
     }
     if (requiresAuth) {
-      String? token = await getToken(); // Gunakan metode publik
-      if (token != null) {
+      String? token = await getToken();
+      if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
     }
     return headers;
   }
 
-  // --- Auth ---
-  Future<Map<String, dynamic>> register(
-    String name,
-    String email,
-    String password,
-    String passwordConfirmation,
-  ) async {
+  // --- Helper untuk Error Handling ---
+  Exception _handleErrorResponse(http.Response response, String defaultMessage) {
+    try {
+      final responseData = jsonDecode(response.body);
+      return Exception(responseData['message'] as String? ?? '$defaultMessage (Status: ${response.statusCode})');
+    } catch (e) {
+      return Exception('$defaultMessage (Status: ${response.statusCode}), Respons tidak valid: ${response.body}');
+    }
+  }
+
+
+  // === OTENTIKASI ===
+  Future<Map<String, dynamic>> register(String name, String email, String password, String passwordConfirmation) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/register'),
       headers: await _getHeaders(requiresAuth: false),
@@ -60,67 +71,42 @@ class ApiService {
         'password': password,
       }),
     );
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 201 && responseData['token'] != null) {
-      await saveToken(responseData['token']); // Gunakan metode publik
-      return {
-        'user': AuthenticatedUser.fromJson(responseData['user']),
-        'token': responseData['token'],
-      };
-    } else {
-      throw Exception(
-        responseData['message'] ??
-            'Failed to register: ${response.statusCode} ${response.body}',
-      );
+    if (response.statusCode == 201) {
+      final responseData = jsonDecode(response.body);
+      if (responseData['token'] != null && responseData['user'] != null) {
+        await saveToken(responseData['token'] as String);
+        return {
+          'user': AuthenticatedUser.fromJson(responseData['user'] as Map<String, dynamic>),
+          'token': responseData['token'] as String
+        };
+      }
     }
+    throw _handleErrorResponse(response, 'Gagal melakukan registrasi');
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final url = Uri.parse('$_baseUrl/login');
-    final headers = await _getHeaders(requiresAuth: false);
-    final body = jsonEncode({'email': email, 'password': password});
-
-    print('--- LOGIN REQUEST ---');
-    print('URL: $url');
-    print('Headers: $headers');
-    print('Body: $body');
-
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-
-      print('--- LOGIN RESPONSE ---');
-      print('Status Code: ${response.statusCode}');
-      print('Headers: ${response.headers}');
-      print('Body: ${response.body}');
-
+    final response = await http.post(
+      Uri.parse('$_baseUrl/login'),
+      headers: await _getHeaders(requiresAuth: false),
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+    if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
-      if (response.statusCode == 200 && responseData['token'] != null) {
-        await saveToken(responseData['token']);
+      if (responseData['token'] != null && responseData['user'] != null) {
+        await saveToken(responseData['token'] as String);
         return {
-          'user': AuthenticatedUser.fromJson(responseData['user']),
-          'token': responseData['token'],
+          'user': AuthenticatedUser.fromJson(responseData['user'] as Map<String, dynamic>),
+          'token': responseData['token'] as String
         };
-      } else {
-        // Cetak pesan error dari server jika ada, atau buat pesan default
-        final errorMessage =
-            responseData['message'] ??
-            'Failed to login (Status: ${response.statusCode})';
-        print('Login Error (Server): $errorMessage');
-        throw Exception(errorMessage);
       }
-    } catch (e) {
-      // Tangkap error koneksi atau error parsing JSON
-      print('Login Error (Client/Network): $e');
-      throw Exception(
-        'Tidak dapat terhubung ke server atau respons tidak valid. Error: $e',
-      );
     }
+    throw _handleErrorResponse(response, 'Gagal login');
   }
 
   Future<void> logout() async {
     final String? token = await getToken();
-    if (token == null) {
-      await deleteToken();
+    if (token == null || token.isEmpty) {
+      await deleteToken(); // Pastikan token bersih
       return;
     }
     try {
@@ -129,254 +115,176 @@ class ApiService {
         headers: await _getHeaders(),
       );
       if (response.statusCode != 200) {
-        print('API logout failed: ${response.statusCode} ${response.body}');
+        print('API logout gagal: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      print('Error during API logout call: $e');
+      print('Error saat memanggil API logout: $e');
     } finally {
       await deleteToken(); // Selalu hapus token dari storage
     }
   }
 
   Future<AuthenticatedUser> getAuthenticatedUser() async {
-    final String? token = await getToken();
-    if (token == null) {
-      // Jika tidak ada token sama sekali, tidak perlu panggil API, langsung throw error unauthenticated
-      throw Exception('Unauthenticated. No token found.');
-    }
-
     final response = await http.get(
       Uri.parse('$_baseUrl/user'),
-      headers:
-          await _getHeaders(), // _getHeaders akan otomatis menyertakan token jika ada
+      headers: await _getHeaders(),
     );
-
     if (response.statusCode == 200) {
-      return AuthenticatedUser.fromJson(jsonDecode(response.body));
+      return AuthenticatedUser.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } else if (response.statusCode == 401) {
-      // Token tidak valid atau expired, hapus dari storage
-      await deleteToken();
-      throw Exception('Unauthorized. Please login again.');
-    } else {
-      throw Exception(
-        'Failed to load user: ${response.statusCode} ${response.body}',
-      );
+      await deleteToken(); // Token tidak valid, hapus
+      throw Exception('Sesi tidak valid. Silakan login kembali.');
     }
+    throw _handleErrorResponse(response, 'Gagal mengambil data pengguna');
   }
 
-  // ... (sisa metode ApiService) ...
-  // --- Groups ---
-  Future<List<Group>> getDiscoverableGroups() async {
+  // === PROYEK ===
+  Future<List<Project>> getDiscoverableProjects() async {
     final response = await http.get(
-      Uri.parse(
-        '$_baseUrl/groups',
-      ), // Menggunakan endpoint /groups yang sudah ada
-      headers: await _getHeaders(
-        requiresAuth: true,
-      ), // Biasanya perlu auth untuk lihat daftar grup
+      Uri.parse('$_baseUrl/projects'),
+      headers: await _getHeaders(), // Asumsi perlu otentikasi
     );
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
-      final List<dynamic> groupListJson =
-          responseData['data'] ?? responseData; // Sesuaikan jika ada paginasi
-      return groupListJson.map((json) => Group.fromJson(json)).toList();
-    } else {
-      throw Exception(
-        'Failed to load discoverable groups: ${response.statusCode} ${response.body}',
-      );
+      final List<dynamic> projectListJson = responseData['data'] as List<dynamic>? ?? responseData as List<dynamic>;
+      return projectListJson.map((json) => Project.fromJson(json as Map<String, dynamic>)).toList();
     }
+    throw _handleErrorResponse(response, 'Gagal memuat daftar proyek');
   }
 
-  Future<Group> createGroup(String name, String? description) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/groups'),
-      headers: await _getHeaders(),
-      body: jsonEncode({'name': name, 'description': description}),
-    );
-    if (response.statusCode == 201) {
-      // Pastikan response.body adalah JSON yang valid sebelum di-decode
-      try {
-        return Group.fromJson(jsonDecode(response.body));
-      } catch (e) {
-        print("Error parsing JSON for created group: $e");
-        throw Exception('Respons server tidak valid setelah membuat grup.');
-      }
-    } else {
-      final responseData = jsonDecode(response.body);
-      // Pastikan 'message' ada dan bukan null sebelum digunakan
-      final errorMessage =
-          responseData['message'] as String? ??
-          'Gagal membuat grup (Status: ${response.statusCode})';
-      throw Exception(errorMessage);
-    }
-  }
-
-  Future<Group> getGroupDetails(int groupId) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/groups/$groupId'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      return Group.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception(
-        'Failed to load group details: ${response.statusCode} ${response.body}',
-      );
-    }
-  }
-
-  Future<void> requestToJoinGroup(int groupId) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/groups/$groupId/request-join'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      // Berhasil, mungkin ada pesan di response.body
-      print(jsonDecode(response.body)['message']);
-    } else {
-      final responseData = jsonDecode(response.body);
-      throw Exception(
-        responseData['message'] ??
-            'Failed to request join: ${response.statusCode} ${response.body}',
-      );
-    }
-  }
-
-  Future<List<User>> listJoinRequests(int groupId) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/groups/$groupId/join-requests'),
-      headers: await _getHeaders(),
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> requestListJson = jsonDecode(response.body);
-      return requestListJson
-          .map((json) => User.fromJson(json))
-          .toList(); // Backend mengirim list User
-    } else {
-      throw Exception(
-        'Failed to list join requests: ${response.statusCode} ${response.body}',
-      );
-    }
-  }
-
-  Future<String> approveJoinRequest(int groupId, int userIdToApprove) async {
-    final response = await http.post(
-      Uri.parse(
-        '$_baseUrl/groups/$groupId/join-requests/$userIdToApprove/approve',
-      ),
-      headers: await _getHeaders(),
-    );
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return responseData['message'];
-    } else {
-      throw Exception(
-        responseData['message'] ??
-            'Failed to approve request: ${response.statusCode}',
-      );
-    }
-  }
-
-  Future<String> rejectJoinRequest(int groupId, int userIdToReject) async {
-    final response = await http.post(
-      Uri.parse(
-        '$_baseUrl/groups/$groupId/join-requests/$userIdToReject/reject',
-      ),
-      headers: await _getHeaders(),
-    );
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return responseData['message'];
-    } else {
-      throw Exception(
-        responseData['message'] ??
-            'Failed to reject request: ${response.statusCode}',
-      );
-    }
-  }
-
-  // --- Projects ---
-  Future<Project> createProject(
-    int groupId,
-    String name,
-    String? description,
-    DateTime? deadline,
-  ) async {
+  Future<Project> createProject(String name, String? description, DateTime? deadline) async {
     String? formattedDeadline;
     if (deadline != null) {
       formattedDeadline = DateFormat('yyyy-MM-dd').format(deadline);
     }
-
     final response = await http.post(
-      Uri.parse('$_baseUrl/groups/$groupId/projects'),
+      Uri.parse('$_baseUrl/projects'),
       headers: await _getHeaders(),
       body: jsonEncode({
         'name': name,
         'description': description,
-        'deadline': formattedDeadline, // Kirim sebagai YYYY-MM-DD
+        'deadline': formattedDeadline,
       }),
     );
     if (response.statusCode == 201) {
-      return Project.fromJson(jsonDecode(response.body));
-    } else {
-      final responseData = jsonDecode(response.body);
-      throw Exception(
-        responseData['message'] ??
-            'Failed to create project: ${response.statusCode} ${response.body}',
-      );
+      return Project.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     }
+    throw _handleErrorResponse(response, 'Gagal membuat proyek');
   }
 
-  Future<List<Project>> getProjectsForGroup(int groupId) async {
+  Future<Project> getProjectDetails(int projectId) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/groups/$groupId/projects'),
+      Uri.parse('$_baseUrl/projects/$projectId'),
+      headers: await _getHeaders(),
+    );
+    if (response.statusCode == 200) {
+      return Project.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    }
+    throw _handleErrorResponse(response, 'Gagal memuat detail proyek');
+  }
+
+  Future<String> requestToJoinProject(int projectId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/projects/$projectId/request-join'),
+      headers: await _getHeaders(),
+    );
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) return responseData['message'] as String? ?? 'Permintaan terkirim';
+    throw _handleErrorResponse(response, 'Gagal mengirim permintaan bergabung');
+  }
+
+  Future<List<User>> listProjectJoinRequests(int projectId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/projects/$projectId/join-requests'),
+      headers: await _getHeaders(),
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> requestListJson = jsonDecode(response.body) as List<dynamic>;
+      return requestListJson.map((json) => User.fromJson(json as Map<String, dynamic>)).toList();
+    }
+    throw _handleErrorResponse(response, 'Gagal memuat permintaan bergabung');
+  }
+
+  Future<String> approveProjectJoinRequest(int projectId, int userIdToApprove) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/projects/$projectId/join-requests/$userIdToApprove/approve'),
+      headers: await _getHeaders(),
+    );
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) return responseData['message'] as String? ?? 'Permintaan disetujui';
+    throw _handleErrorResponse(response, 'Gagal menyetujui permintaan');
+  }
+
+  Future<String> rejectProjectJoinRequest(int projectId, int userIdToReject) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/projects/$projectId/join-requests/$userIdToReject/reject'),
+      headers: await _getHeaders(),
+    );
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) return responseData['message'] as String? ?? 'Permintaan ditolak';
+    throw _handleErrorResponse(response, 'Gagal menolak permintaan');
+  }
+
+   Future<String> leaveProject(int projectId) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/projects/$projectId/leave'),
+      headers: await _getHeaders(),
+    );
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) return responseData['message'] as String? ?? 'Berhasil keluar dari proyek';
+    throw _handleErrorResponse(response, 'Gagal keluar dari proyek');
+  }
+
+  // === TODOS ===
+  Future<List<Todo>> getTodosForProject(int projectId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/projects/$projectId/todos'),
       headers: await _getHeaders(),
     );
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
-      // Asumsi backend mengirim list project dalam 'data' jika ada paginasi, atau langsung list
-      final List<dynamic> projectListJson =
-          responseData['data'] ?? responseData;
-      return projectListJson.map((json) => Project.fromJson(json)).toList();
-    } else {
-      throw Exception(
-        'Failed to load projects for group: ${response.statusCode} ${response.body}',
-      );
+      final List<dynamic> todoListJson = responseData['data'] as List<dynamic>? ?? responseData as List<dynamic>;
+      return todoListJson.map((json) => Todo.fromJson(json as Map<String, dynamic>)).toList();
     }
+    throw _handleErrorResponse(response, 'Gagal memuat tugas');
   }
 
-  Future<Project> createFullProject(
-    String projectName,
-    String? projectDescription,
-    DateTime? projectDeadline,
-    String groupName,
-    String? groupDescription,
-  ) async {
-    String? formattedDeadline;
-    if (projectDeadline != null) {
-      formattedDeadline = DateFormat('yyyy-MM-dd').format(projectDeadline);
-    }
-
+  Future<Todo> createTodo(int projectId, String title) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/projects-with-group'), // Endpoint baru
+      Uri.parse('$_baseUrl/projects/$projectId/todos'),
       headers: await _getHeaders(),
-      body: jsonEncode({
-        'project_name': projectName,
-        'project_description': projectDescription,
-        'project_deadline': formattedDeadline,
-        'group_name': groupName,
-        'group_description': groupDescription,
-      }),
+      body: jsonEncode({'title': title}),
     );
-
     if (response.statusCode == 201) {
-      return Project.fromJson(jsonDecode(response.body));
-    } else {
-      final responseData = jsonDecode(response.body);
-      final errorMessage =
-          responseData['message'] as String? ??
-          'Gagal membuat proyek dan grup (Status: ${response.statusCode})';
-      throw Exception(errorMessage);
+      return Todo.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     }
+    throw _handleErrorResponse(response, 'Gagal membuat tugas');
   }
+
+  Future<Todo> updateTodo(int projectId, int todoId, String title, bool isCompleted) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/projects/$projectId/todos/$todoId'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'title': title, 'is_completed': isCompleted}),
+    );
+    if (response.statusCode == 200) {
+      return Todo.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    }
+    throw _handleErrorResponse(response, 'Gagal memperbarui tugas');
+  }
+
+  Future<void> deleteTodo(int projectId, int todoId) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/projects/$projectId/todos/$todoId'),
+      headers: await _getHeaders(),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) { // 204 No Content juga sukses
+      throw _handleErrorResponse(response, 'Gagal menghapus tugas');
+    }
+    // Tidak ada body untuk di-return pada delete sukses
+  }
+  // Mirip dengan implementasi Todos, sesuaikan dengan endpoint dan model Note Anda.
+  // Contoh:
+  // Future<List<Note>> getNotesForProject(int projectId) async { ... }
+  // Future<Note> createNote(int projectId, String content, {String? title}) async { ... }
 }
