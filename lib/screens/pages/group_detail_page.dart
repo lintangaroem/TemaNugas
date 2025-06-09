@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-
-// Sesuaikan path import ini dengan struktur proyek Anda
 import '../../../providers/auth_provider.dart';
 import '../../../services/API/api_services.dart'; // Menggunakan nama file dari kode Anda
 import '../../../models/project.dart';
@@ -22,10 +20,10 @@ class ProjectDetailPage extends StatefulWidget {
   State<ProjectDetailPage> createState() => _ProjectDetailPageState();
 }
 
-class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTickerProviderStateMixin {
+class _ProjectDetailPageState extends State<ProjectDetailPage> with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   Future<Project>? _projectDetailsFuture;
-  
+
   // Menggunakan List untuk menyimpan data yang bisa di-refresh
   List<User> _joinRequests = [];
   List<Todo> _todos = [];
@@ -48,12 +46,24 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this); // 0: Tugas, 1: Anggota, 2: Catatan (atau Permintaan jika creator)
+    _tabController?.addListener((){
+      if(mounted){
+        setState(() {
+          print('DEBUG TAB CHANGE: Tab index changed to: ${_tabController?.index}');
+          print('DEBUG TAB CHANGE: _isCreator: $_isCreator');
+          print('DEBUG TAB CHANGE: _isApprovedMember: $_isApprovedMember');
+          print('DEBUG TAB CHANGE: FAB should be visible? ${(_isCreator || _isApprovedMember) && _tabController?.index == 1}');
+        });
+      }
+    });
     _currentUser = Provider.of<AuthProvider>(context, listen: false).user;
+    print('DEBUG INIT: Current User ID: ${_currentUser?.id}');
     _loadAllProjectData();
   }
 
   @override
   void dispose() {
+    _tabController?.removeListener((){});
     _tabController?.dispose();
     _newTodoController.dispose();
     _editTodoController.dispose();
@@ -61,6 +71,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
   }
 
   Future<void> _loadAllProjectData({bool showFullLoading = true}) async {
+    print('DEBUG LOAD: Loading Project ID: ${widget.projectId}');
     if (showFullLoading && mounted) {
       setState(() {
         _isLoadingProject = true;
@@ -78,6 +89,47 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
         _hasPendingRequest = _currentUser?.pendingProjectRequests.any((p) => p.id == project.id) ?? false;
         _projectDetailsFuture = Future.value(project); // Update future dengan data yang sudah ada
 
+        print('DEBUG LOAD: Project Name: ${project.name}'); // <--- Tambahkan di sini
+        print('DEBUG LOAD: Project Creator ID: ${project.createdBy}'); // <--- Tambahkan di sini
+        print('DEBUG LOAD: Is Creator: $_isCreator'); // <--- Tambahkan di sini
+        print('DEBUG LOAD: Is Approved Member: $_isApprovedMember'); // <--- Tambahkan di sini
+        print('DEBUG LOAD: Has Pending Request: $_hasPendingRequest'); // <--- Tambahkan di sini
+        if (project.approvedMembers != null) { // <--- Tambahkan ini untuk melihat daftar anggota
+          print('DEBUG LOAD: Approved Members IDs: ${project.approvedMembers!.map((m) => m.id).join(', ')}');
+        } else {
+          print('DEBUG LOAD: Approved Members: null');
+        }
+
+        final newTabLength = _isCreator ? 4 : 3;
+        if (_tabController?.length != newTabLength) {
+          final oldIndex = _tabController?.index ?? 0;
+          _tabController?.removeListener(() {});
+          _tabController?.dispose();
+          _tabController = TabController(length: newTabLength, vsync: this);
+          _tabController?.addListener(() {
+            if (mounted) {
+              setState(() {
+                print(
+                    'DEBUG TAB CHANGE (New Controller): Tab index changed to: ${_tabController
+                        ?.index}');
+                print(
+                    'DEBUG TAB CHANGE (New Controller): _isCreator: $_isCreator');
+                print(
+                    'DEBUG TAB CHANGE (New Controller): _isApprovedMember: $_isApprovedMember');
+                print(
+                    'DEBUG TAB CHANGE (New Controller): FAB should be visible? ${(_isCreator ||
+                        _isApprovedMember) && _tabController?.index == 1}');
+              });
+            }
+          });
+
+          if (oldIndex >= newTabLength) {
+            _tabController?.index = newTabLength - 1;
+          } else {
+            _tabController?.index = oldIndex;
+          }
+        }
+
         if (_isCreator || _isApprovedMember) {
           _loadTodos();
         }
@@ -90,6 +142,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
       if (mounted) {
         setState(() {
           _isLoadingProject = false;
+          print('DEBUG LOAD ERROR: Failed to load project details: ${error.toString()}');
           // Set _projectDetailsFuture ke error agar FutureBuilder bisa menampilkannya
           _projectDetailsFuture = Future.error(error);
         });
@@ -99,29 +152,39 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
       }
     }
   }
-  
+
   Future<void> _loadTodos() async {
+    // Tambahkan debug prints di sini untuk melacak status loading
+    print('DEBUG TODOS: _isLoadingTodos set to true.'); // <--- Tambahan
     if (mounted) setState(() => _isLoadingTodos = true);
     try {
       final todos = await _apiService.getTodosForProject(widget.projectId);
       if (mounted) setState(() => _todos = todos);
+      print('DEBUG TODOS: Todos loaded successfully. Count: ${_todos.length}'); // <--- Tambahan
     } catch (e) {
       if (mounted) {
+        print('DEBUG TODOS ERROR: Failed to load todos: $e'); // <--- Tambahan
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memuat tugas: $e'), backgroundColor: AppColors.redAlert));
       }
     } finally {
       if (mounted) setState(() => _isLoadingTodos = false);
+      print('DEBUG TODOS: _isLoadingTodos set to false.'); // <--- Tambahan
     }
   }
 
   Future<void> _loadJoinRequests() async {
-    if (!_isCreator) return;
+    if (!_isCreator) {
+      print('DEBUG JOIN REQUESTS: Not creator, skipping join requests load.');
+      return;
+    }
     if (mounted) setState(() => _isLoadingJoinRequests = true);
     try {
       final requests = await _apiService.listProjectJoinRequests(widget.projectId);
       if (mounted) setState(() => _joinRequests = requests);
+      print('DEBUG JOIN REQUESTS: Loaded ${requests.length} join requests.');
     } catch (e) {
       if (mounted) {
+        print('DEBUG JOIN REQUESTS ERROR: Failed to load join requests: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memuat permintaan bergabung: $e'), backgroundColor: AppColors.redAlert));
       }
     } finally {
@@ -131,6 +194,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
 
 
   Future<void> _refreshData() async {
+    print('DEBUG REFRESH: Refreshing all data...');
     await _loadAllProjectData(showFullLoading: false);
     // Refresh juga data user di AuthProvider jika ada perubahan keanggotaan
     if (mounted) {
@@ -179,7 +243,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
                         SnackBar(content: Text('Tugas "$title" berhasil ditambah.'), backgroundColor: AppColors.greenSuccess),
                       );
                     }
-                    _loadTodos(); // Refresh daftar todo
+                    _loadTodos();
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Gagal: ${e.toString().replaceFirst("Exception: ", "")}'), backgroundColor: AppColors.redAlert),
@@ -345,24 +409,63 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
       future: _projectDetailsFuture,
       builder: (context, projectSnapshot) {
         if (_isLoadingProject || !projectSnapshot.hasData && projectSnapshot.connectionState == ConnectionState.waiting) {
+          print('DEBUG BUILD: Project is loading or no data yet.');
           return Scaffold(appBar: AppBar(title: const Text("Memuat Proyek...")), body: const Center(child: CircularProgressIndicator()));
         }
         if (projectSnapshot.hasError) {
+          print('DEBUG BUILD: Project snapshot has error: ${projectSnapshot.error}');
           return Scaffold(appBar: AppBar(title: const Text("Error")), body: Center(child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text("Error memuat detail proyek: ${projectSnapshot.error.toString().replaceFirst("Exception: ", "")}", style: AppTextStyles.bodyMedium.copyWith(color: AppColors.redAlert)),
           )));
         }
         if (!projectSnapshot.hasData) {
+          print('DEBUG BUILD: Project snapshot has no data.');
           return Scaffold(appBar: AppBar(title: const Text("Tidak Ditemukan")), body: const Center(child: Text("Proyek tidak ditemukan.", style: AppTextStyles.bodyLarge)));
         }
 
         final project = projectSnapshot.data!;
         // Update tab controller length based on whether user is creator for join requests tab
-        final tabLength = _isCreator ? 4 : 3; // Detail, Tugas, Anggota, (Permintaan)
-        if(_tabController?.length != tabLength) {
-          _tabController = TabController(length: tabLength, vsync: this, initialIndex: _tabController?.index ?? 0);
-        }
+        // final tabLength = _isCreator ? 4 : 3; // Detail, Tugas, Anggota, (Permintaan)
+
+        print('DEBUG BUILD FAB CHECK: _isCreator: $_isCreator'); // <--- Tambahkan di sini
+        print('DEBUG BUILD FAB CHECK: _isApprovedMember: $_isApprovedMember'); // <--- Tambahkan di sini
+        print('DEBUG BUILD FAB CHECK: _tabController?.index: ${_tabController?.index}'); // <--- Tambahkan di sini
+        print('DEBUG BUILD FAB CHECK: FAB should be visible? ${(_isCreator || _isApprovedMember) && _tabController?.index == 1}');
+
+        // final newTabLength = _isCreator ? 4 : 3;
+        // if(_tabController?.length != newTabLength) {
+        //   final oldIndex = _tabController?.index ?? 0;
+        //
+        //   _tabController?.removeListener((){});
+        //   _tabController?.dispose();
+        //   _tabController = TabController(length: newTabLength, vsync: this);
+        //   _tabController?.addListener((){
+        //     if (mounted) {
+        //       setState(() {
+        //         print('DEBUG TAB CHANGE (New Controller): Tab index changed to: ${_tabController?.index}');
+        //         print('DEBUG TAB CHANGE (New Controller): _isCreator: $_isCreator');
+        //         print('DEBUG TAB CHANGE (New Controller): _isApprovedMember: $_isApprovedMember');
+        //         print('DEBUG TAB CHANGE (New Controller): FAB should be visible? ${(_isCreator || _isApprovedMember) && _tabController?.index == 1}');
+        //       });
+        //     }
+        //   });
+        //
+        //   if (oldIndex >= newTabLength) {
+        //     _tabController?.index = newTabLength - 1;
+        //   } else {
+        //     _tabController?.index = oldIndex;
+        //   }
+        // }
+        //
+        // if (_isCreator || _isApprovedMember) {
+        //   _loadTodos();
+        // }
+        // if (_isCreator) {
+        //   _loadJoinRequests();
+        // }
+        // _isLoadingProject = false;
+
 
 
         return Scaffold(
