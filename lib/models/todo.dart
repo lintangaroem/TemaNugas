@@ -28,7 +28,7 @@ class Todo {
       projectId: json['project_id'] as int,
       title: json['title'] as String? ?? 'Tanpa Judul',
       isCompleted: json['is_completed'] as bool? ?? false,
-      createdByUserId: json['user_id'] as int?,
+      createdByUserId: json['created_by_user_id'] as int?,
       creator: json['creator'] != null ? User.fromJson(json['creator'] as Map<String, dynamic>) : null,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
