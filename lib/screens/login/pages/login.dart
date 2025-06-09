@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Sesuaikan path ini jika lokasi file berbeda di proyek Anda
 import '../../../providers/auth_provider.dart';
-import '../../../constants/constant.dart'; // Menggunakan path dari kode Anda
-import '../../../constants/theme.dart';   // Menggunakan path dari kode Anda
-import 'register.dart'; // Import untuk halaman register
-// HomePage tidak perlu diimport di sini lagi jika navigasi dihandle AuthWrapper
-// import '../../pages/home_page.dart';
+import '../../../constants/constant.dart';
+// import 'register.dart'; // HAPUS - tidak digunakan
+import '../../../services/API/login_service.dart';
+import 'package:TemaNugas/screens/pages/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,64 +20,21 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  void _togglePasswordVisibility() {
-    setState(() {
-      _obscurePassword = !_obscurePassword;
-    });
+  // Service untuk login
+  late LoginService _loginService;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi login service
+    _loginService = LoginService(
+      Provider.of<AuthProvider>(context, listen: false),
+    );
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    // .trim() sudah ada, bagus!
-    final String email = _emailController.text.trim();
-    final String password = _passwordController.text.trim();
-
-    // Validasi tambahan jika setelah trim jadi kosong (meskipun validator sudah ada)
-    if (email.isEmpty || password.isEmpty) {
-      if (mounted) { // Selalu cek mounted sebelum mengakses context
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email dan Password tidak boleh hanya spasi.'),
-            backgroundColor: AppColors.redAlert,
-          ),
-        );
-      }
-      return;
-    }
-
-    if (mounted) setState(() => _isLoading = true);
-
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.login(email, password);
-
-      // Navigasi ke HomePage akan dihandle oleh AuthWrapper di main.dart
-      // berdasarkan perubahan status di AuthProvider.
-      // Jadi, tidak perlu Navigator.pushReplacement di sini.
-
-      if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Login Gagal! Periksa kembali email dan password Anda.'),
-            backgroundColor: AppColors.redAlert,
-          ),
-        );
-      }
-    } catch (e) {
-      // Error dari API service (misal koneksi, dll) akan ditangkap di sini
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Terjadi kesalahan: ${e.toString().replaceFirst("Exception: ", "")}"),
-            backgroundColor: AppColors.redAlert,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  // HAPUS method yang tidak digunakan:
+  // void _togglePasswordVisibility() { ... }
+  // Future<void> _submit() async { ... }
 
   @override
   void dispose() {
@@ -88,120 +43,162 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  void _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      try {
+        // Hapus print statements untuk production, atau ganti dengan debugPrint
+        debugPrint("=== STARTING LOGIN ===");
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+        final success = await authProvider.login(email, password);
+        debugPrint("Login success: $success");
+        debugPrint("Auth status: ${authProvider.authStatus}");
+
+        // Reset loading state terlebih dahulu
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+
+        if (!mounted) return;
+
+        if (success && authProvider.isAuthenticated) {
+          debugPrint("=== LOGIN SUCCESSFUL, NAVIGATING ===");
+
+          // Gunakan addPostFrameCallback untuk memastikan UI sudah diupdate
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const HomePage(),
+                  settings: const RouteSettings(name: '/home'),
+                ),
+                (route) => false,
+              );
+            }
+          });
+        } else {
+          debugPrint("=== LOGIN FAILED ===");
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(authProvider.errorMessage ?? "Login gagal"),
+                backgroundColor: AppColors.redAlert,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint("=== LOGIN ERROR: $e ===");
+
+        // Reset loading state saat error
+        if (mounted) {
+          setState(() => _isLoading = false);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Error: ${e.toString()}"),
+              backgroundColor: AppColors.redAlert,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Mengambil tema dari AppTheme
-    final theme = Theme.of(context);
-
     return Scaffold(
-      // backgroundColor: AppColors.background, // Sudah diatur di AppTheme
       body: SafeArea(
-        child: Center( // Tambahkan Center agar form di tengah jika konten tidak memenuhi layar
-          child: SingleChildScrollView( // Memastikan bisa di-scroll jika keyboard muncul
-            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center, // Pusatkan konten kolom
-                crossAxisAlignment: CrossAxisAlignment.stretch, // Buat tombol full-width
-                children: [
-                  // Anda bisa menambahkan logo atau gambar di sini
-                  const SizedBox(height: 20),
-                  Text(
-                    'Sign In',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.heading.copyWith(color: AppColors.primaryBlue), // Menggunakan AppTextStyles
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo atau title
+                Text(
+                  'Login',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 40),
+
+                // Email field
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Selamat datang kembali! Silakan login.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                  const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration( // Akan menggunakan style dari AppTheme.inputDecorationTheme
-                      hintText: 'Email',
-                      prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textLight),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return 'Email tidak boleh kosong';
-                      if (!value.trim().contains('@') || !value.trim().contains('.')) { // Validasi email sederhana
-                        return 'Masukkan format email yang valid';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textLight),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: AppColors.textLight,
-                        ),
-                        onPressed: _togglePasswordVisibility,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email tidak boleh kosong';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Email tidak valid';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Password field
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
                       ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Password tidak boleh kosong';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
                       onPressed: () {
-                        // TODO: Implementasi Lupa Password
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fitur Lupa Password belum diimplementasikan.')),
-                        );
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
                       },
-                      child: Text( // Akan menggunakan style dari AppTheme.textButtonTheme
-                        'Lupa password?',
-                        // style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primaryBlue),
-                      ),
                     ),
                   ),
-                  const SizedBox(height: 25), // Beri jarak sebelum tombol login
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          // Style akan diambil dari AppTheme.elevatedButtonTheme
-                          onPressed: _submit,
-                          child: const Text('LOGIN'),
-                        ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Belum punya akun?", style: AppTextStyles.bodyMedium),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const RegisterPage()),
-                          );
-                        },
-                        child: Text(
-                          'Daftar Sekarang',
-                          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
-                        ),
-                      ),
-                    ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password tidak boleh kosong';
+                    }
+                    if (value.length < 6) {
+                      return 'Password minimal 6 karakter';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Login button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleLogin,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Login'),
                   ),
-                  const SizedBox(height: 20), // Padding bawah
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+
+                // Register link
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/register');
+                  },
+                  child: const Text('Belum punya akun? Daftar di sini'),
+                ),
+              ],
             ),
           ),
         ),

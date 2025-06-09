@@ -8,19 +8,13 @@ import '../../models/user/authenticated_user.dart';
 import '../../models/user/user.dart';
 import '../../models/project.dart';
 import '../../models/todo.dart';
-import '../../models/note.dart';
 
 class ApiService {
-  // --- KONFIGURASI BASE URL ---
-  // Ganti dengan IP address lokal komputer Anda jika testing di device fisik
-  // atau 10.0.2.2 jika testing di emulator Android & Laravel jalan di localhost.
-  // Pastikan server Laravel Anda berjalan dengan --host=0.0.0.0
-  static const String _baseUrl = 'http://192.168.1.8:8000/api'; // CONTOH, SESUAIKAN!
+  static const String _baseUrl = 'http://192.168.1.8:8000/api';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   static const String _authTokenKey = 'auth_token';
 
-  // --- Helper untuk Token ---
   Future<String?> getToken() async {
     return await _storage.read(key: _authTokenKey);
   }

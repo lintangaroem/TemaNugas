@@ -78,8 +78,8 @@ class _ProjectsOverviewPageState extends State<ProjectsOverviewPage> {
         // Menggunakan styling dari AppTheme.listTileTheme
         leading: CircleAvatar(
           backgroundColor: isPending
-              ? AppColors.orangeWarning.withOpacity(0.15)
-              : (isCreator ? AppColors.greenSuccess.withOpacity(0.15) : AppColors.primaryBlue.withOpacity(0.15)),
+              ? AppColors.orangeWarning.withAlpha(1)
+              : (isCreator ? AppColors.greenSuccess.withAlpha(1) : AppColors.primaryBlue.withAlpha(1)),
           child: Icon(
             isPending ? Icons.hourglass_top_rounded : (isCreator ? Icons.star_border_rounded : Icons.folder_shared_outlined),
             color: isPending ? AppColors.orangeWarning : (isCreator ? AppColors.greenSuccess : AppColors.primaryBlue),

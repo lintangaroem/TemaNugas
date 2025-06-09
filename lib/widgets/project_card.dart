@@ -3,9 +3,6 @@ import 'package:intl/intl.dart';
 import '../../models/project.dart'; 
 import '../constants/constant.dart';
 import '../screens/pages/group_detail_page.dart';
-import '../screens/pages/projects_overview_page.dart';
-import '../models/user/authenticated_user.dart';
-import '../services/API/api_services.dart';
 
 class ProjectCard extends StatelessWidget {
   final Project project;

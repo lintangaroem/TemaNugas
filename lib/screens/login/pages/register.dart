@@ -3,9 +3,7 @@ import 'package:provider/provider.dart';
 // Sesuaikan path ini jika lokasi file berbeda di proyek Anda
 import '../../../providers/auth_provider.dart';
 import '../../../constants/constant.dart'; // Menggunakan path dari kode Anda
-import '../../../constants/theme.dart';   // Menggunakan path dari kode Anda
-// LoginPage tidak perlu diimport jika navigasi setelah register dihandle AuthWrapper
-import 'login.dart'; // Untuk kembali ke login jika diperlukan secara manual
+// Untuk kembali ke login jika diperlukan secara manual
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -44,11 +42,6 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _obscureRepeatPassword = !_obscureRepeatPassword);
   }
 
-  // Fungsi isValidEmail tidak perlu di sini jika validasi email sudah cukup di TextFormField
-  // bool isValidEmail(String email) {
-  //   return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-  // }
-
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -81,22 +74,15 @@ class _RegisterPageState extends State<RegisterPage> {
         passwordConfirmation, // Kirim konfirmasi password
       );
 
-      // Navigasi ke HomePage akan dihandle oleh AuthWrapper di main.dart
-      // berdasarkan perubahan status di AuthProvider.
-      // Jadi, Navigator.pop(context) tidak diperlukan untuk navigasi ke Home.
-      // Jika registrasi sukses dan AuthProvider mengubah status, AuthWrapper akan bereaksi.
 
       if (success && mounted) {
-        // Jika ingin kembali ke halaman login setelah register sukses (sebelum AuthWrapper redirect)
-        // Anda bisa lakukan pop, tapi biasanya AuthWrapper langsung redirect ke Home.
-        Navigator.of(context).pop(); // Opsional: kembali ke login dulu
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Registrasi berhasil! Anda akan diarahkan ke halaman utama.'),
             backgroundColor: AppColors.greenSuccess,
           ),
         );
-        // Biarkan AuthWrapper menangani navigasi ke HomePage
       } else if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -118,13 +104,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  // void _goBackToLogin() { // Tidak diperlukan jika navigasi "Sudah punya akun?" menggunakan Navigator.pop()
-  //   Navigator.pop(context);
-  // }
-
   InputDecoration _inputDecoration(String hintText, {Widget? suffixIcon}) {
-    // Akan menggunakan style dari AppTheme.inputDecorationTheme
     return InputDecoration(
       hintText: hintText,
       prefixIcon: hintText == 'Username' ? const Icon(Icons.person_outline_rounded, color: AppColors.textLight)
@@ -137,7 +117,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: AppColors.background, // Sudah diatur di AppTheme
       body: SafeArea(
         child: Center( // Tambahkan Center
           child: SingleChildScrollView(
@@ -161,7 +140,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: AppTextStyles.bodyMedium,
                   ),
                   const SizedBox(height: 30),
-                  // errorText tidak digunakan lagi, SnackBar lebih baik
                   TextFormField(
                     controller: _nameController, // Menggunakan _nameController
                     decoration: _inputDecoration('Nama Lengkap'),

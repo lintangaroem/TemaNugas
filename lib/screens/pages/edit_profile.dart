@@ -11,10 +11,10 @@ class EditProfilePage extends StatefulWidget {
 
 
 class _EditProfilePageState extends State<EditProfilePage> {
- final _firstNameController = TextEditingController(text: 'Zhafran');
- final _lastNameController = TextEditingController(text: 'Aryan');
- final _usernameController = TextEditingController(text: 'Zhafran');
- final _emailController = TextEditingController(text: 'zhafransyah@gmail.com');
+ final _firstNameController = TextEditingController(text: 'Salma');
+ final _lastNameController = TextEditingController(text: 'Afifa');
+ final _usernameController = TextEditingController(text: 'Azis');
+ final _emailController = TextEditingController(text: 'salma@gmail.com');
 
 
  String? _selectedSkill;
@@ -71,7 +71,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                      child: IconButton(
                        icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
                        onPressed: () {
-                         // TODO: aksi ganti foto profil
                        },
                      ),
                    ),
@@ -114,7 +113,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                width: double.infinity,
                child: ElevatedButton(
                  onPressed: () {
-                   // TODO: simpan data profil
                    Navigator.pop(context);
                  },
                  style: ElevatedButton.styleFrom(

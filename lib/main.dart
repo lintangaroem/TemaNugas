@@ -8,7 +8,8 @@ import 'package:TemaNugas/screens/login/pages/register.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-Future<void> main() async { // Tambahkan async
+Future<void> main() async {
+  // Tambahkan async
   // Pastikan Flutter binding diinisialisasi jika ada operasi async sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -25,8 +26,6 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        // Tambahkan provider lain di sini jika diperlukan nanti
-        // misal: ProjectProvider, TodoProvider
       ],
       child: MaterialApp(
         title: 'Teman Nugas',
@@ -37,51 +36,60 @@ class MyApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('id', 'ID'),
-          Locale('en', 'US'),
-        ],
+        supportedLocales: const [Locale('id', 'ID'), Locale('en', 'US')],
         locale: const Locale('id', 'ID'),
         home: const AuthWrapper(),
         routes: {
           '/login': (context) => const LoginPage(),
           '/home': (context) => const HomePage(),
+          '/register': (context) => const RegisterPage(),
         },
       ),
     );
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
   Widget build(BuildContext context) {
-    final authStatus = context.watch<AuthProvider>().authStatus;
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final authStatus = authProvider.authStatus;
+        
+        print("AuthWrapper: Current AuthStatus = $authStatus");
 
-    print("AuthWrapper: Current AuthStatus = $authStatus");
-
-    switch (authStatus) {
-      case AuthStatus.uninitialized:
-      case AuthStatus.authenticating:
-        return const Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20),
-                Text("Memuat aplikasi..."),
-              ],
-            ),
-          ),
-        );
-      case AuthStatus.authenticated:
-        return const HomePage();
-      case AuthStatus.unauthenticated:
-      case AuthStatus.error:
-      default:
-        return const LoginPage();
-    }
+        switch (authStatus) {
+          case AuthStatus.uninitialized:
+          case AuthStatus.authenticating:
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 20),
+                    Text("Memuat aplikasi..."),
+                  ],
+                ),
+              ),
+            );
+          case AuthStatus.authenticated:
+            print("AuthWrapper: User is authenticated, showing HomePage");
+            return const HomePage();
+          case AuthStatus.unauthenticated:
+          case AuthStatus.error:
+          default:
+            print("AuthWrapper: User is not authenticated, showing LoginPage");
+            return const LoginPage();
+        }
+      },
+    );
   }
 }

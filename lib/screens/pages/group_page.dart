@@ -17,7 +17,7 @@ class GroupPage extends StatefulWidget {
 }
 
 class _GroupPageState extends State<GroupPage> {
-  int _selectedIndex = 1; // Ini adalah indeks yang benar untuk 'Proyek Saya'
+  final int _selectedIndex = 1; // Ini adalah indeks yang benar untuk 'Proyek Saya'
 
   void _onItemTapped(int index) {
     if (_selectedIndex == index) return;
@@ -61,8 +61,8 @@ class _GroupPageState extends State<GroupPage> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isPending
-              ? AppColors.orangeWarning.withOpacity(0.15)
-              : (isCreator ? AppColors.greenSuccess.withOpacity(0.15) : AppColors.primaryBlue.withOpacity(0.15)),
+              ? AppColors.orangeWarning.withAlpha(1)
+              : (isCreator ? AppColors.greenSuccess.withAlpha(1) : AppColors.primaryBlue.withAlpha(1)),
           child: Icon(
             isPending ? Icons.hourglass_top_rounded : (isCreator ? Icons.star_outline_rounded : Icons.folder_shared_outlined),
             color: isPending ? AppColors.orangeWarning : (isCreator ? AppColors.greenSuccess : AppColors.primaryBlue),

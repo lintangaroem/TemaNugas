@@ -37,7 +37,7 @@ class AppTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.lightGrey.withOpacity(0.5),
+        fillColor: AppColors.lightGrey.withAlpha(1),
         contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -86,7 +86,7 @@ class AppTheme {
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.background,
         selectedItemColor: AppColors.primaryBlue,
-        unselectedItemColor: AppColors.textLight.withOpacity(0.7),
+        unselectedItemColor: AppColors.textLight.withAlpha(1),
         selectedLabelStyle: AppTextStyles.labelSmall.copyWith(fontWeight: FontWeight.bold),
         unselectedLabelStyle: AppTextStyles.labelSmall,
         type: BottomNavigationBarType.fixed,
@@ -118,7 +118,7 @@ class AppTheme {
       ),
       
       dividerTheme: DividerThemeData(
-        color: AppColors.lightGrey.withOpacity(0.8),
+        color: AppColors.lightGrey.withAlpha(1),
         thickness: 1,
       )
     );

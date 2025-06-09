@@ -34,7 +34,7 @@ class TodoItemTile extends StatelessWidget {
           // VisualDensity lebih kecil agar checkbox tidak terlalu besar
           visualDensity: VisualDensity.compact,
           side: BorderSide(
-            color: todo.isCompleted ? AppColors.primaryBlue : AppColors.textLight.withOpacity(0.5),
+            color: todo.isCompleted ? AppColors.primaryBlue : AppColors.textLight.withAlpha(1),
             width: 1.5,
           ),
         ),

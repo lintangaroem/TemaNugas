@@ -11,7 +11,6 @@ import 'package:TemaNugas/models/user/user.dart';
 import '../../../models/todo.dart';
 // import '../../../models/note.dart'; // Untuk fitur Notes nanti
 import '../../../constants/constant.dart';
-import '../../../constants/theme.dart';
 import 'todo/todo_item_tile.dart'; // Widget TodoItemTile yang baru dibuat
 
 class ProjectDetailPage extends StatefulWidget {
@@ -139,7 +138,6 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
     }
   }
 
-  // --- DIALOG TAMBAH TODO ---
   void _showAddEditTodoDialog({Todo? existingTodo}) {
     _editTodoController.text = existingTodo?.title ?? '';
     final formKey = GlobalKey<FormState>();
@@ -171,7 +169,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> with SingleTicker
                   Navigator.of(dialogContext).pop(); // Tutup dialog dulu
                   try {
                     if (isEditing) {
-                      await _apiService.updateTodo(widget.projectId, existingTodo!.id, title, existingTodo.isCompleted);
+                      await _apiService.updateTodo(widget.projectId, existingTodo.id, title, existingTodo.isCompleted);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Tugas "${existingTodo.title}" berhasil diperbarui.'), backgroundColor: AppColors.greenSuccess),
                       );
