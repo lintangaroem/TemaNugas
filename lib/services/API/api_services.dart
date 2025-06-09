@@ -15,7 +15,7 @@ class ApiService {
   // Ganti dengan IP address lokal komputer Anda jika testing di device fisik
   // atau 10.0.2.2 jika testing di emulator Android & Laravel jalan di localhost.
   // Pastikan server Laravel Anda berjalan dengan --host=0.0.0.0
-  static const String _baseUrl = 'http://192.168.0.5:8000/api'; // CONTOH, SESUAIKAN!
+  static const String _baseUrl = 'http://192.168.43.247:8000/api'; // CONTOH, SESUAIKAN!
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   static const String _authTokenKey = 'auth_token';
