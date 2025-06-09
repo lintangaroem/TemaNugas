@@ -8,6 +8,8 @@ import 'edit_profile.dart';
 import '../../widgets/navbar.dart'; // Pastikan path ini benar!
 import 'home_page.dart';
 import 'group_page.dart'; // Tambahkan import GroupPage
+import 'package:TemaNugas/screens/login/pages/login.dart';
+
 
 class ProfilePage extends StatefulWidget { // Ubah menjadi StatefulWidget
   const ProfilePage({super.key});
@@ -97,25 +99,26 @@ class _ProfilePageState extends State<ProfilePage> { // Buat State class
             automaticallyImplyLeading: false,
             actions: [
               IconButton(
-                icon: const Icon(Icons.logout_outlined),
+                icon: const Icon(Icons.logout_outlined, color: AppColors.primaryBlue),
                 tooltip: "Logout",
                 onPressed: () async {
+                  if (!mounted) return;
+
+                  // Show a confirmation dialog before logging out
                   final confirmLogout = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text("Logout"),
-                      content: const Text(
-                        "Anda yakin ingin keluar dari akun ini?",
-                      ),
+                      content: const Text("Are you sure you want to log out?"),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text("Batal"),
+                          onPressed: () => Navigator.of(ctx).pop(false), // User cancels
+                          child: const Text("No"),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(true),
+                          onPressed: () => Navigator.of(ctx).pop(true), // User confirms
                           child: const Text(
-                            "Logout",
+                            "Yes",
                             style: TextStyle(color: AppColors.redAlert),
                           ),
                         ),
@@ -123,20 +126,19 @@ class _ProfilePageState extends State<ProfilePage> { // Buat State class
                     ),
                   );
 
+                  // If the user confirms the logout, proceed
                   if (confirmLogout == true) {
-                    await authProvider.logout();
-                    // Setelah logout, mungkin ingin kembali ke halaman login atau home
-                    // Pastikan `mounted` sebelum melakukan navigasi yang melibatkan `context`
-                    if (!mounted) return;
-                    // Contoh:
-                    // Navigator.pushAndRemoveUntil(
-                    //   context,
-                    //   MaterialPageRoute(builder: (context) => const LoginPage()), // Ganti dengan halaman login Anda
-                    //   (route) => false,
-                    // );
+                    await Provider.of<AuthProvider>(context, listen: false).logout();
+
+                    // After logout, navigate to the login page
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                          (route) => false, // Remove all routes in the stack
+                    );
                   }
                 },
-              ),
+              )
             ],
           ),
           body: SingleChildScrollView(

@@ -13,6 +13,7 @@ import 'group_detail_page.dart'; // Assuming this exists and is needed
 import 'group_page.dart';
 import 'profile.dart';
 
+
 // Konten untuk tab Beranda
 class HomeContent extends StatefulWidget {
   final Function? onRefreshRequested;
@@ -415,11 +416,6 @@ class _HomePageState extends State<HomePage> {
                   Text("Halo, $username!", style: AppTextStyles.titleLarge, overflow: TextOverflow.ellipsis),
                   Text("Siap nugas bareng hari ini?", style: AppTextStyles.bodyMedium),
                 ])),
-                IconButton(icon: const Icon(Icons.logout_outlined, color: AppColors.primaryBlue), tooltip: "Logout",
-                    onPressed: () async {
-                      if (!mounted) return;
-                      await Provider.of<AuthProvider>(context, listen: false).logout();
-                    })
               ]),
               const SizedBox(height: 25),
               TextField(
