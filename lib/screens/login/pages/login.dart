@@ -43,6 +43,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // Ganti method _handleLogin dengan ini:
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -51,15 +52,14 @@ class _LoginPageState extends State<LoginPage> {
       final password = _passwordController.text;
 
       try {
-        // Hapus print statements untuk production, atau ganti dengan debugPrint
-        debugPrint("=== STARTING LOGIN ===");
+        print("=== STARTING LOGIN ===");
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
         final success = await authProvider.login(email, password);
-        debugPrint("Login success: $success");
-        debugPrint("Auth status: ${authProvider.authStatus}");
+        print("Login success: $success");
+        print("Auth status: ${authProvider.authStatus}");
 
-        // Reset loading state terlebih dahulu
+        // SELALU reset loading state terlebih dahulu
         if (mounted) {
           setState(() => _isLoading = false);
         }
@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
         if (!mounted) return;
 
         if (success && authProvider.isAuthenticated) {
-          debugPrint("=== LOGIN SUCCESSFUL, NAVIGATING ===");
+          print("=== LOGIN SUCCESSFUL, NAVIGATING ===");
 
           // Gunakan addPostFrameCallback untuk memastikan UI sudah diupdate
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,27 +82,27 @@ class _LoginPageState extends State<LoginPage> {
             }
           });
         } else {
-          debugPrint("=== LOGIN FAILED ===");
+          print("=== LOGIN FAILED ===");
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(authProvider.errorMessage ?? "Login gagal"),
-                backgroundColor: AppColors.redAlert,
+                backgroundColor: Colors.red,
               ),
             );
           }
         }
       } catch (e) {
-        debugPrint("=== LOGIN ERROR: $e ===");
+        print("=== LOGIN ERROR: $e ===");
 
-        // Reset loading state saat error
+        // SELALU reset loading state saat error
         if (mounted) {
           setState(() => _isLoading = false);
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Error: ${e.toString()}"),
-              backgroundColor: AppColors.redAlert,
+              backgroundColor: Colors.red,
             ),
           );
         }
@@ -157,7 +157,9 @@ class _LoginPageState extends State<LoginPage> {
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -184,9 +186,12 @@ class _LoginPageState extends State<LoginPage> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Login'),
+                    child:
+                        _isLoading
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text('Login'),
                   ),
                 ),
                 const SizedBox(height: 16),
