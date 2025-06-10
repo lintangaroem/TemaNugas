@@ -5,7 +5,7 @@ import 'package:intl/intl.dart'; // Untuk format tanggal jika diperlukan
 import '../../providers/auth_provider.dart';
 import '../../models/project.dart';
 import '../../constants/constant.dart';
-import 'home_page.dart'; // Untuk navigasi kembali ke Beranda
+import 'homepage/home_page.dart'; // Untuk navigasi kembali ke Beranda
 import 'group_detail_page.dart'; // Akan kita buat nanti
 // import 'profile_page.dart'; // Untuk navigasi ke profil
 

@@ -5,7 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../models/project.dart';
 import '../../../constants/constant.dart';
 import '../../widgets/navbar.dart'; // Ini adalah import untuk BottomNavBar Anda
-import './home_page.dart';
+import 'homepage/home_page.dart';
 import './profile.dart';
 import 'group_detail_page.dart';
 

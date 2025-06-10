@@ -10,7 +10,7 @@ import '../../models/project.dart';
 import '../../models/todo.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://192.168.1.8:8000/api';
+  static const String _baseUrl = 'http://192.168.78.243:8000/api';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   static const String _authTokenKey = 'auth_token';

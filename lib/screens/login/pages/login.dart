@@ -4,7 +4,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../constants/constant.dart';
 // import 'register.dart'; // HAPUS - tidak digunakan
 import '../../../services/API/login_service.dart';
-import 'package:TemaNugas/screens/pages/home_page.dart';
+import 'package:TemaNugas/screens/pages/homepage/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

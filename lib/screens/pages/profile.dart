@@ -6,7 +6,7 @@ import '../../../constants/constant.dart';
 import '../../../constants/theme.dart';
 import 'edit_profile.dart';
 import '../../widgets/navbar.dart';
-import 'home_page.dart';
+import 'homepage/home_page.dart';
 import 'group_page.dart';
 import 'package:TemaNugas/screens/login/pages/login.dart';
 
