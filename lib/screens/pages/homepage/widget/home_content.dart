@@ -55,7 +55,7 @@ class HomeContent extends StatelessWidget {
           return ProjectCard(
             project: project,
             onRequestJoinPressed: () => onRequestJoin(project),
-            onTap: () => onNavigateToDetail(project),
+            //onTap: () => onNavigateToDetail(project),
           );
         },
       ),
