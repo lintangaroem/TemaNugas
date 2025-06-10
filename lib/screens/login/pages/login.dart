@@ -32,10 +32,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // HAPUS method yang tidak digunakan:
-  // void _togglePasswordVisibility() { ... }
-  // Future<void> _submit() async { ... }
-
   @override
   void dispose() {
     _emailController.dispose();
