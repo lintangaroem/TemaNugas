@@ -20,12 +20,20 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 2;
   bool isEditingBio = false;
-  TextEditingController bioController = TextEditingController();
+  late TextEditingController bioController;
 
   @override
   void initState() {
     super.initState();
-    bioController.text = 'hi';
+    // Initialize controller dengan data dari provider
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    bioController = TextEditingController(text: authProvider.userBio);
+  }
+
+  @override
+  void dispose() {
+    bioController.dispose();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -88,6 +96,11 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         }
 
+        // Sync bioController dengan data dari provider
+        if (bioController.text != authProvider.userBio && !isEditingBio) {
+          bioController.text = authProvider.userBio;
+        }
+
         return Scaffold(
           appBar: AppBar(
             backgroundColor: AppColors.background,
@@ -112,22 +125,23 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 6),
                   Text(currentUser.email, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
+                  // Skills dari provider - sekarang persistent!
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
                     alignment: WrapAlignment.center,
-                    children: const [
-                      Chip(label: Text('UI/UX'), backgroundColor: AppColors.lightGrey),
-                      Chip(label: Text('Frontend'), backgroundColor: AppColors.lightGrey),
-                      Chip(label: Text('Backend'), backgroundColor: AppColors.lightGrey),
-                    ],
+                    children: authProvider.userSkills.map((skill) =>
+                        Chip(
+                            label: Text(skill),
+                            backgroundColor: AppColors.lightGrey
+                        )
+                    ).toList(),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.edit_outlined, size: 20),
                     label: const Text('Edit Profil'),
                     onPressed: () {
-                      // Pisahkan nama untuk firstName dan lastName
                       final nameParts = _splitName(currentUser.name);
 
                       Navigator.push(
@@ -136,22 +150,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           builder: (_) => EditProfilePage(
                             firstName: nameParts[0],
                             lastName: nameParts[1],
-                            username: currentUser.name, // atau gunakan username terpisah jika ada
+                            username: currentUser.name,
                             email: currentUser.email,
-                            skill: 'UI/UX', // default skill, bisa disesuaikan dengan data user
-                            bio: bioController.text,
+                            selectedSkills: authProvider.userSkills, // Dari provider
+                            bio: authProvider.userBio, // Dari provider
                             profileImageUrl: 'https://ui-avatars.com/api/?name=${currentUser.name.replaceAll(' ', '+')}&background=random&color=fff&size=128&font-size=0.33',
                           ),
                         ),
                       ).then((result) {
                         if (mounted && result != null) {
-                          // Update data jika ada perubahan dari EditProfile
-                          setState(() {
-                            if (result['bio'] != null) {
-                              bioController.text = result['bio'];
-                            }
-                          });
-                          Provider.of<AuthProvider>(context, listen: false).fetchUserDetails();
+                          // Update ke provider - akan persistent!
+                          authProvider.updateProfileData(
+                            bio: result['bio'],
+                            skills: result['skills'],
+                          );
                         }
                       });
                     },
@@ -189,6 +201,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(height: 10),
                           ElevatedButton(
                             onPressed: () {
+                              // Simpan ke provider
+                              authProvider.updateUserBio(bioController.text);
                               setState(() {
                                 isEditingBio = false;
                               });
@@ -198,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       )
                           : Text(
-                        bioController.text,
+                        authProvider.userBio, // Ambil dari provider
                         style: AppTextStyles.bodyLarge.copyWith(height: 1.5),
                         textAlign: TextAlign.justify,
                       ),

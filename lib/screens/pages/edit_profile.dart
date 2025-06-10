@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 class EditProfilePage extends StatefulWidget {
-  // Tambahkan parameter untuk menerima data profil
   final String firstName;
   final String lastName;
   final String username;
   final String email;
-  final String? skill;
+  final List<String>? selectedSkills; // Ubah dari single skill ke list
   final String? bio;
   final String? profileImageUrl;
 
@@ -16,7 +15,7 @@ class EditProfilePage extends StatefulWidget {
     required this.lastName,
     required this.username,
     required this.email,
-    this.skill,
+    this.selectedSkills,
     this.bio,
     this.profileImageUrl,
   });
@@ -32,21 +31,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _emailController;
   late TextEditingController _bioController;
 
-  String? _selectedSkill;
-  final List<String> _skills = ['UI/UX', 'Frontend', 'Backend'];
+  // Ubah ke list untuk multiple selection
+  List<String> _selectedSkills = [];
+  final List<String> _availableSkills = [
+    'UI/UX',
+    'Frontend',
+    'Backend',
+    'Mobile Development',
+    'Data Science',
+    'DevOps',
+    'Machine Learning',
+    'Cybersecurity'
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi controller dengan data yang diterima
     _firstNameController = TextEditingController(text: widget.firstName);
     _lastNameController = TextEditingController(text: widget.lastName);
     _usernameController = TextEditingController(text: widget.username);
     _emailController = TextEditingController(text: widget.email);
     _bioController = TextEditingController(text: widget.bio ?? '');
 
-    // Set skill yang dipilih
-    _selectedSkill = widget.skill;
+    // Set skills yang sudah dipilih sebelumnya
+    _selectedSkills = widget.selectedSkills ?? [];
   }
 
   @override
@@ -57,6 +65,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController.dispose();
     _bioController.dispose();
     super.dispose();
+  }
+
+  void _toggleSkill(String skill) {
+    setState(() {
+      if (_selectedSkills.contains(skill)) {
+        _selectedSkills.remove(skill);
+      } else {
+        _selectedSkills.add(skill);
+      }
+    });
   }
 
   @override
@@ -80,42 +98,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage: widget.profileImageUrl != null
-                        ? NetworkImage(widget.profileImageUrl!)
-                        : null,
-                    backgroundColor: Colors.orange,
-                    child: widget.profileImageUrl == null
-                        ? Text(
-                      '${widget.firstName[0]}${widget.lastName[0]}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    )
-                        : null,
-                  ),
-                  Positioned(
-                    right: 4,
-                    bottom: 4,
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.white,
-                      child: IconButton(
-                        icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
-                        onPressed: () {
-                          // TODO: aksi ganti foto profil
-                        },
-                      ),
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: widget.profileImageUrl != null
+                          ? NetworkImage(widget.profileImageUrl!)
+                          : null,
+                      backgroundColor: Colors.orange,
+                      child: widget.profileImageUrl == null
+                          ? Text(
+                        '${widget.firstName[0]}${widget.lastName.isNotEmpty ? widget.lastName[0] : ''}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                          : null,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
               _buildTextField('First Name', _firstNameController),
@@ -125,28 +132,77 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _buildTextField('Username', _usernameController),
               const SizedBox(height: 16),
               _buildTextField('Email', _emailController, enabled: false),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: 'Skill',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              const SizedBox(height: 20),
+
+              // Skills Section dengan multiple selection
+              const Text(
+                'Skills',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
-                value: _selectedSkill,
-                items: _skills
-                    .map((skill) => DropdownMenuItem(
-                  value: skill,
-                  child: Text(skill),
-                ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedSkill = value;
-                  });
-                },
-                hint: const Text('Pilih skill'),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pilih skills yang kamu kuasai:',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _availableSkills.map((skill) {
+                        final isSelected = _selectedSkills.contains(skill);
+                        return GestureDetector(
+                          onTap: () => _toggleSkill(skill),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue.shade600 : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? Colors.blue.shade600 : Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Text(
+                              skill,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.grey.shade700,
+                                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    if (_selectedSkills.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'Skills terpilih: ${_selectedSkills.length}',
+                        style: TextStyle(
+                          color: Colors.blue.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               _buildTextField('Bio', _bioController, maxLines: 3),
@@ -155,13 +211,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: simpan data profil dan kirim kembali ke halaman sebelumnya
                     final updatedData = {
                       'firstName': _firstNameController.text,
                       'lastName': _lastNameController.text,
                       'username': _usernameController.text,
                       'email': _emailController.text,
-                      'skill': _selectedSkill,
+                      'skills': _selectedSkills, // Kirim list skills
                       'bio': _bioController.text,
                     };
                     Navigator.pop(context, updatedData);
